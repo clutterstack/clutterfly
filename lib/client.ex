@@ -1,6 +1,6 @@
 defmodule Clutterfly.Client do
 
-  alias Clutterfly.Validation
+  import Clutterfly.Validation
 
   require Logger
 

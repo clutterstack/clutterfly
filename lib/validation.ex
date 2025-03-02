@@ -1,5 +1,7 @@
 defmodule Clutterfly.Validation do
 
+  require Logger
+
    # Validates parameters using the provided schema module
    def validate_body(params, schema_module) do
     changeset = schema_module.changeset(struct(schema_module), params)

@@ -1,6 +1,5 @@
 defmodule Clutterfly.Commands do
-  alias Clutterfly.Client
-  alias Clutterfly.Validation
+  import Clutterfly.Client
 
   require Logger
 
@@ -21,21 +20,21 @@ defmodule Clutterfly.Commands do
   @doc """
   Run a new Machine
   """
-  def machine_create(appname, body), do: validate_and_run(:machine_create, [appname], body)
+  def create_machine(appname, body), do: validate_and_run(:machine_create, [appname], body)
 
   @doc """
   Change the Machine's config (causes a restart)
   """
-  def update_machine(appname, machine_id, body), do: validate_and_run(:update_machine, [appname, machine_id], body)
+  def update_machine(appname, machine_id, body), do: validate_and_run(:machine_update, [appname, machine_id], body)
 
   @doc """
   Create a new volume
   """
-  def create_volume(appname, body), do: validate_and_run(:create_volume, [appname], body)
+  def create_volume(appname, body), do: validate_and_run(:volume_create, [appname], body)
   @doc """
   Update a volume
   """
-  def update_volume(appname, volume_id, body), do: validate_and_run(:update_volume, [appname, volume_id], body)
+  def update_volume(appname, volume_id, body), do: validate_and_run(:volume_update, [appname, volume_id], body)
 
 
   @doc """
@@ -54,7 +53,7 @@ defmodule Clutterfly.Commands do
           }
         }
       }
-      machine_create(appname, mach_params)
+      create_machine(appname, mach_params)
     end
 
     @doc """
@@ -67,7 +66,7 @@ defmodule Clutterfly.Commands do
           image: "registry.fly.io/where:debian-nano"
         }
       }
-      machine_create(appname, mach_params)
+      create_machine(appname, mach_params)
     end
 
 end
