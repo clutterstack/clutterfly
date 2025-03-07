@@ -18,6 +18,13 @@ defmodule Clutterfly.Commands do
   end
 
   @doc """
+  List Machines in app
+  """
+  def list_machines(app) do
+    FlyMachines.machine_list(app)
+  end
+
+  @doc """
   Run a new Machine
   """
   def create_machine(appname, body), do: validate_and_run(:machine_create, [appname], body)
@@ -40,11 +47,10 @@ defmodule Clutterfly.Commands do
   @doc """
   Try running with a preset config:
   """
-    def run_preset_machine do
-      appname = "where"
+    def run_preset_machine(appname \\ "where", image \\ "registry.fly.io/where:debian-nano") do
       mach_params = %{
         config: %{
-          image: "registry.fly.io/where:debian-nano",
+          image: image,
           auto_destroy: true,
           guest: %{
             cpu_kind: "shared",
@@ -59,11 +65,10 @@ defmodule Clutterfly.Commands do
     @doc """
     Run with a minimal preset config:
     """
-    def run_min_config do
-      appname = "where"
+    def run_min_config(appname \\ "where", image \\ "registry.fly.io/where:debian-nano") do
       mach_params = %{
         config: %{
-          image: "registry.fly.io/where:debian-nano"
+          image: image
         }
       }
       create_machine(appname, mach_params)
