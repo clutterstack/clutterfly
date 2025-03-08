@@ -1,6 +1,7 @@
 defmodule Clutterfly.Commands do
   import Clutterfly.Validate
   alias Clutterfly.FlySchemas
+  alias Clutterfly.FlyAPI
 
   require Logger
 
@@ -82,9 +83,9 @@ defmodule Clutterfly.Commands do
       create_machine(appname, mach_params)
     end
 
-    @doc """
-    Force-destroy all Machines in the app
-    """
+    # @doc """
+    # Force-destroy all Machines in the app
+    # """
     # def force_destroy_machines(appname) do
     #   # get Machines in app
 

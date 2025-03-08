@@ -1,100 +1,3 @@
-defmodule Clutterfly.FlyAPI do
-  @moduledoc """
-  Client for interacting with the Fly.io Machines API.
-
-  The initial version of this was generated entirely in a chat with
-  Claude Sonnet 3.7 on March 7 2025, based on today's Fly Machines
-  spec.json OpenAPI spec file. !
-
-  This module provides a comprehensive interface to the Fly.io Machines API,
-  allowing you to manage apps, machines, volumes, and other resources.
-
-  ## Usage
-
-  ```elixir
-  # Create a client
-  client = FlyAPI.new("your_api_token")
-
-  # List apps
-  {:ok, %{body: apps}} = FlyAPI.list_apps(client, "your_org_slug")
-
-  # Get a specific machine
-  {:ok, %{body: machine}} = FlyAPI.get_machine(client, "your_app_name", "machine_id")
-
-  # Destroy a machine
-  {:ok, _} = FlyAPI.destroy_machine(client, "your_app_name", "machine_id", true)
-  ```
-  """
-
-  @base_url "https://api.machines.dev/v1"
-
-  @type client :: %{
-    base_url: String.t(),
-    api_token: String.t()
-  }
-
-  @type response :: {:ok, map()} | {:error, term()}
-
-  @doc """
-  Creates a new API client.
-
-  ## Parameters
-
-    * `api_token` - Your Fly API token
-    * `base_url` - Optional base URL for the API (defaults to "https://api.machines.dev/v1")
-
-  ## Examples
-
-      iex> client = FlyAPI.new("your_api_token")
-      %{base_url: "https://api.machines.dev/v1", api_token: "your_api_token"}
-
-  """
-  @spec new(api_token :: String.t(), base_url :: String.t()) :: client()
-  def new(api_token, base_url \\ @base_url) do
-
-    Application.get_env(:default, [])
-    %{
-      base_url: base_url,
-      api_token: api_token
-    }
-  end
-
-  @doc """
-  Helper for making authenticated requests with consistent error handling.
-
-  You can pass options to Req, like retry:
-
-  FlyAPI.destroy_machine(client, "app", "machine_id", retry: [delay: 500, max_retries: 3])
-  """
-  @spec request(client(), method :: atom(), path :: String.t(), opts :: keyword()) :: response()
-  def request(client, method, path, opts \\ []) do
-    req_opts = [
-      method: method,
-      url: "#{client.base_url}#{path}",
-      auth: {:bearer, client.api_token},
-      receive_timeout: Keyword.get(opts, :timeout, 30_000),
-      json: Keyword.get(opts, :body),
-      params: Keyword.get(opts, :params, []),
-      retry: Keyword.get(opts, :retry, false)  # Add retry options
-    ]
-    # Add any other custom Req options
-    req_opts = Keyword.merge(req_opts, Keyword.drop(opts, [:timeout, :body, :params, :retry]))
-
-    Req.request(req_opts)
-    |> handle_response()
-  end
-
-  defp handle_response({:ok, %{status: status}} = response) when status in 200..299 do
-    response
-  end
-
-  defp handle_response({:ok, %{status: _status, body: body}}) do
-    {:error, body}
-  end
-
-  defp handle_response({:error, _} = error) do
-    error
-  end
 
   #
   # Apps Resource
@@ -114,7 +17,7 @@ defmodule Clutterfly.FlyAPI do
       {:ok, %{body: %{"apps" => [...], "total_apps" => 5}}}
   """
   @spec list_apps(client(), org_slug :: String.t()) :: response()
-  def list_apps(client, org_slug) do
+  def list_apps(client \\ @defaults org_slug) do
     request(client, :get, "/apps", params: [org_slug: org_slug])
   end
 
@@ -176,6 +79,7 @@ defmodule Clutterfly.FlyAPI do
   def delete_app(client, app_name) do
     request(client, :delete, "/apps/#{app_name}")
   end
+
 
   #
   # Machines Resource
@@ -1007,4 +911,3 @@ defmodule Clutterfly.FlyAPI do
   def request_oidc_token(client, params) do
     request(client, :post, "/tokens/oidc", body: params)
   end
-end

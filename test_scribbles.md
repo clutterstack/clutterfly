@@ -66,3 +66,33 @@ iex(1)> Clutterfly.Commands.run_min_config()
   region: "yyz"  # Using the region from your fly.toml
 }
 ```
+
+## Try to create an app using a deploy token (403: unauthorized)
+
+```
+client = Clutterfly.FlyAPI.new
+iex(25)> Clutterfly.FlyAPI.create_app(client, %{app_name: "where-2", org_slug: "personal"})
+[(clutterfly 0.1.0) lib/fly_api.ex:72: Clutterfly.FlyAPI.request/4]
+opts #=> [body: %{org_slug: "personal", app_name: "where-2"}]
+
+<!-- Req.request returned this: {:ok,
+ %Req.Response{
+   status: 403,
+   headers: %{
+     "content-type" => ["application/json; charset=utf-8"],
+     "date" => ["Sat, 08 Mar 2025 04:37:37 GMT"],
+     "fly-request-id" => ["01JNT0PRE4J80RBKMBXAY1WGFQ-yyz"],
+     "fly-span-id" => ["24ec2652f82f440a"],
+     "fly-trace-id" => ["bd12694e16e088163cf18eec8167fa74"],
+     "server" => ["Fly/dcbfc673f (2025-03-07)"],
+     "transfer-encoding" => ["chunked"],
+     "via" => ["1.1 fly.io"],
+     "x-envoy-upstream-service-time" => ["73"]
+   },
+   body: %{"error" => "unauthorized"},
+   trailers: %{},
+   private: %{}
+ }} -->
+
+{:error, "403: unauthorized"}
+```
