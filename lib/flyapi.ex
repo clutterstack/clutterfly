@@ -61,6 +61,10 @@ defmodule Clutterfly.FlyAPI do
 
   @doc """
   Helper for making authenticated requests with consistent error handling.
+
+  You can pass options to Req, like retry:
+
+  FlyAPI.destroy_machine(client, "app", "machine_id", retry: [delay: 500, max_retries: 3])
   """
   @spec request(client(), method :: atom(), path :: String.t(), opts :: keyword()) :: response()
   def request(client, method, path, opts \\ []) do
