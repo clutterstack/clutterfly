@@ -32,13 +32,25 @@ Clutterfly.Commands.run_min_config(yourapp)
 
 to start a tiny machine.
 
+## Todo: add tests
+
+Who knows if half these schemas are nonsense?
+
+## Todo: update schemas
+Decide how: is it more work or less reliable to regenerate them by improving and rerunning `openapi-json-to-ecto` vs. diffing `spec.json`
+
 ## Todo: Retries and Req options
 [FlyMachines accepts Req options as an arg, and Req handles retries](https://github.com/ckreiling/fly_machines?tab=readme-ov-file#request-retries)
+
+## Todo: render example or model bodies
+Follow all the embeds in a schema and display the structure.
 
 ## Dev scribbles
 
 ### Todo?
-* Commands specifically for running from IEx (With wrapped errors and confirmation)
+* Commands specifically for running from IEx (With wrapped errors and confirmation, pretty output)
+* Validate path and query parameters. FlyMachines handles this OK(`wait` and `apps_list` both have query parameters)
+
 
 ### Snippets
 For parsing the response somewhere else

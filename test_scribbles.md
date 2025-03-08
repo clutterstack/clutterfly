@@ -27,3 +27,42 @@ iex(1)> Clutterfly.Commands.run_min_config()
    ...
  >}
  ```
+
+ ## possibly valid request body (claude)
+
+ ```
+ %{
+  config: %{
+    image: "registry.fly.io/where:debian-nano",
+    auto_destroy: true,
+    guest: %{
+      cpu_kind: "shared",
+      cpus: 1,
+      memory_mb: 256
+    },
+    # Optional fields below
+    services: [
+      %{
+        ports: [
+          %{
+            port: 80,
+            handlers: ["http"]
+          }
+        ],
+        protocol: "tcp",
+        internal_port: 8080
+      }
+    ],
+    # Ensure machine stops properly on shutdown
+    stop_config: %{
+      signal: "SIGINT",
+      timeout: %{
+        time_duration: 30
+      }
+    }
+  },
+  # Optional fields
+  name: "my-machine",
+  region: "yyz"  # Using the region from your fly.toml
+}
+```

@@ -1,5 +1,6 @@
 defmodule Clutterfly.Commands do
-  import Clutterfly.Client
+  import Clutterfly.Validate
+  alias Clutterfly.FlySchemas
 
   require Logger
 
@@ -27,7 +28,13 @@ defmodule Clutterfly.Commands do
   @doc """
   Run a new Machine
   """
-  def create_machine(appname, body), do: validate_and_run(:machine_create, [appname], body)
+  def create_machine(appname, body) do
+    case validate_and_run(:machine_create, [appname], body) do
+      {:ok, %{:status => _status, :body => body}} -> validate_body(body, FlySchemas.Machine)
+      {:error, %{:status => status, :body => %{"error" => errmsg}}} -> {:error, "#{status}: #{errmsg}"}
+      {:ok, _somethingelse} -> {:error, "Unexpected response from FlyMachines function"}
+    end
+  end
 
   @doc """
   Change the Machine's config (causes a restart)
@@ -42,7 +49,6 @@ defmodule Clutterfly.Commands do
   Update a volume
   """
   def update_volume(appname, volume_id, body), do: validate_and_run(:volume_update, [appname, volume_id], body)
-
 
   @doc """
   Try running with a preset config:
@@ -63,7 +69,9 @@ defmodule Clutterfly.Commands do
     end
 
     @doc """
-    Run with a minimal preset config:
+    Run with a minimal preset config
+
+    Return when it's "started"
     """
     def run_min_config(appname \\ "where", image \\ "registry.fly.io/where:debian-nano") do
       mach_params = %{
@@ -73,5 +81,16 @@ defmodule Clutterfly.Commands do
       }
       create_machine(appname, mach_params)
     end
+
+    @doc """
+    Force-destroy all Machines in the app
+    """
+    # def force_destroy_machines(appname) do
+    #   # get Machines in app
+
+    #   #
+    # end
+
+    # FlyMachines.machine_wait(appname, "machine-id", params: [state: "stopped"])
 
 end

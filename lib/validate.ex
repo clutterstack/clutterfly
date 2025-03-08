@@ -1,5 +1,4 @@
-defmodule Clutterfly.Client do
-  import Clutterfly.Validation
+defmodule Clutterfly.Validate do
 
   require Logger
 
@@ -10,6 +9,31 @@ defmodule Clutterfly.Client do
   `export FLY_API_TOKEN=$(fly tokens deploy -a <appname>)`
   to get a deploy token for one app.
   """
+
+
+  # Validates parameters using the provided schema module
+  def validate_body(params, schema_module) do
+    changeset = schema_module.changeset(struct(schema_module), params)
+
+    if changeset.valid? do
+      Logger.info("Validated a #{inspect(schema_module)} struct")
+      # Return the original params if they're valid
+      {:ok, params}
+    else
+      errors = format_changeset_errors(changeset)
+      Logger.error("Invalid params for #{inspect(schema_module)}: #{inspect(errors)}")
+      {:error, {:inreq_body, errors}}
+    end
+  end
+
+  # Formats changeset errors into a human-readable format
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+  end
 
   @doc """
   Functions to validate and execute API calls, using the FlyMachines pkg as the core
@@ -78,19 +102,11 @@ defmodule Clutterfly.Client do
   end
 
   def validate_and_run(:machine_start, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_start(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
+    FlyMachines.machine_start(appname, machine_id)
   end
 
   def validate_and_run(:machine_restart, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_restart(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
+    FlyMachines.machine_restart(appname, machine_id)
   end
 
   def validate_and_run(:machine_signal, [appname, machine_id], body) do
@@ -103,19 +119,11 @@ defmodule Clutterfly.Client do
   end
 
   def validate_and_run(:machine_cordon, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_cordon(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
+    FlyMachines.machine_cordon(appname, machine_id)
   end
 
   def validate_and_run(:machine_uncordon, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_uncordon(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
+    FlyMachines.machine_uncordon(appname, machine_id)
   end
 
   def validate_and_run(:machine_lease_acquire, [appname, machine_id], body) do
@@ -128,21 +136,10 @@ defmodule Clutterfly.Client do
   end
 
   def validate_and_run(:machine_lease_release, [appname, machine_id, lease_nonce], _body) do
-    with {:ok, response} <- FlyMachines.machine_lease_release(appname, machine_id, lease_nonce) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
+    FlyMachines.machine_lease_release(appname, machine_id, lease_nonce)
   end
 
-  def validate_and_run(:machine_wait, [appname, machine_id], params) do
-    # Note: This one doesn't validate the params with a schema
-    with {:ok, response} <- FlyMachines.machine_wait(appname, machine_id, params) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+
 
   # Volume operations
   def validate_and_run(:volume_create, [appname], body) do
@@ -172,126 +169,74 @@ defmodule Clutterfly.Client do
     end
   end
 
-  def validate_and_run(:volume_delete, [appname, volume_id], _body) do
-    with {:ok, response} <- FlyMachines.volume_delete(appname, volume_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
 
   # Operations that don't require body validation
-  def validate_and_run(:app_list, [org_slug], _body) do
-    with {:ok, response} <- FlyMachines.app_list(org_slug) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+  # Might prefer not to even have these
 
-  def validate_and_run(:app_retrieve, [appname], _body) do
-    with {:ok, response} <- FlyMachines.app_retrieve(appname) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:volume_delete, [appname, volume_id]) do
+#     FlyMachines.volume_delete(appname, volume_id)
+#   end
 
-  def validate_and_run(:app_delete, [appname], _body) do
-    with {:ok, response} <- FlyMachines.app_delete(appname) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:app_list, [org_slug]) do
+#     FlyMachines.app_list(org_slug)
+#   end
 
-  def validate_and_run(:machine_list, [appname], _body) do
-    with {:ok, response} <- FlyMachines.machine_list(appname) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:app_retrieve, [appname]) do
+#     FlyMachines.app_retrieve(appname)
+#   end
 
-  def validate_and_run(:machine_retrieve, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_retrieve(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:app_delete, [appname]) do
+#     FlyMachines.app_delete(appname)
+#   end
 
-  def validate_and_run(:machine_delete, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_delete(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_list, [appname]) do
+#     FlyMachines.machine_list(appname)
+#   end
 
-  def validate_and_run(:machine_ps, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_ps(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_retrieve, [appname, machine_id]) do
+#     FlyMachines.machine_retrieve(appname, machine_id)
+#   end
 
-  def validate_and_run(:machine_event_list, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_event_list(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_delete, [appname, machine_id]) do
+#     FlyMachines.machine_delete(appname, machine_id)
+#   end
 
-  def validate_and_run(:machine_versions_list, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_versions_list(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_ps, [appname, machine_id]) do
+#     FlyMachines.machine_ps(appname, machine_id)
+#   end
 
-  def validate_and_run(:machine_metadata_retrieve, [appname, machine_id], _body) do
-    with {:ok, response} <- FlyMachines.machine_metadata_retrieve(appname, machine_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_event_list, [appname, machine_id]) do
+#     FlyMachines.machine_event_list(appname, machine_id)
+#   end
 
-  def validate_and_run(:machine_metadata_delete, [appname, machine_id, key], _body) do
-    with {:ok, response} <- FlyMachines.machine_metadata_delete(appname, machine_id, key) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_versions_list, [appname, machine_id]) do
+#     FlyMachines.machine_versions_list(appname, machine_id)
+#   end
 
-  def validate_and_run(:volume_list, [appname], _body) do
-    with {:ok, response} <- FlyMachines.volume_list(appname) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_metadata_retrieve, [appname, machine_id]) do
+#     FlyMachines.machine_metadata_retrieve(appname, machine_id)
+#   end
 
-  def validate_and_run(:volume_retrieve, [appname, volume_id], _body) do
-    with {:ok, response} <- FlyMachines.volume_retrieve(appname, volume_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:machine_metadata_delete, [appname, machine_id, key]) do
+#     FlyMachines.machine_metadata_delete(appname, machine_id, key)
+#   end
 
-  def validate_and_run(:volume_snapshots_list, [appname, volume_id], _body) do
-    with {:ok, response} <- FlyMachines.volume_snapshots_list(appname, volume_id) do
-      {:ok, response}
-    else
-      {:error, response} -> {:error, response}
-    end
-  end
+#   def validate_and_run(:volume_list, [appname]) do
+#     FlyMachines.volume_list(appname)
+#   end
+
+#   def validate_and_run(:volume_retrieve, [appname, volume_id]) do
+#     FlyMachines.volume_retrieve(appname, volume_id)
+#   end
+
+#   def validate_and_run(:volume_snapshots_list, [appname, volume_id]) do
+#     FlyMachines.volume_snapshots_list(appname, volume_id)
+#   end
+
+# def validate_and_run(:machine_wait, [appname, machine_id], params) do
+## Note we have query params in place of a body
+#   FlyMachines.machine_wait(appname, machine_id, params)
+# end
 
   # Catch-all
   def validate_and_run(operation, _args, _body) do
