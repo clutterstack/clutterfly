@@ -42,6 +42,11 @@ Decide how: is it more work or less reliable to regenerate them by improving and
 ## Todo: Retries and Req options
 [FlyMachines accepts Req options as an arg, and Req handles retries](https://github.com/ckreiling/fly_machines?tab=readme-ov-file#request-retries)
 
+Replaced FlyMachines with an internal FlyAPI module. 
+
+## Todo: check if FlyAPI docs have all the parameters right
+Claude generated docs for the API functions. Actually, this is structured data so should use a  program to get the docs -- or to generate the API functions for this module with specs and stuff.
+
 ## Todo: render example or model bodies
 Follow all the embeds in a schema and display the structure.
 
@@ -49,7 +54,7 @@ Follow all the embeds in a schema and display the structure.
 
 ### Todo?
 * Commands specifically for running from IEx (With wrapped errors and confirmation, pretty output)
-* Validate path and query parameters. FlyMachines handles this OK(`wait` and `apps_list` both have query parameters)
+* Validate path and query parameters. FlyMachines handles this OK(`wait` and `apps_list` both have query parameters) (Nimble Options?)
 
 
 ### Snippets

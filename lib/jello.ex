@@ -1,7 +1,6 @@
 defmodule Clutterfly.Jello do
-
-  import Clutterfly.FlyAPI
-
+import Clutterfly.FlyAPI
+import Clutterfly.Validate
   @moduledoc """
   I'll call it Jell-o, not slop.
 
@@ -80,8 +79,10 @@ defmodule Clutterfly.Jello do
       {:ok, %{body: %{"id" => "new-machine-id", ...}}}
   """
   @spec create_machine(client(), app_name :: String.t(), params :: map()) :: response()
-  def create_machine(client \\ @defaults, app_name, params) do
-    request(client, :post, "/apps/#{app_name}/machines", body: params)
+  def create_machine(client, app_name, params) do
+    with {:ok, req_body} <- validate_body(params, Clutterfly.FlySchemas.CreateMachineRequest) do
+      request(client, :post, "/apps/#{app_name}/machines", body: req_body)
+    end
   end
 
   @doc """
@@ -109,48 +110,6 @@ defmodule Clutterfly.Jello do
     request(client, :post, "/apps/#{app_name}/machines/#{machine_id}", body: params)
   end
 
-  @doc """
-  Delete a specific Machine within an app.
-
-  ## Parameters
-
-    * `client` - FlyAPI client
-    * `app_name` - The name of the app
-    * `machine_id` - The ID of the machine to delete
-    * `force` - Whether to force kill the machine if it's running (default: false)
-
-  ## Examples
-
-      iex> FlyAPI.destroy_machine(client, "my-app", "machine-id")
-      {:ok, %{status: 200}}
-
-      iex> FlyAPI.destroy_machine(client, "my-app", "machine-id", true)
-      {:ok, %{status: 200}}
-  """
-  @spec destroy_machine(client(), app_name :: String.t(), machine_id :: String.t(), force :: boolean()) :: response()
-  def destroy_machine(client \\ @defaults, app_name, machine_id, force \\ false) do
-    params = if force, do: [force: true], else: []
-    request(client, :delete, "/apps/#{app_name}/machines/#{machine_id}", params: params)
-  end
-
-  @doc """
-  Cordon a Machine (disable its services).
-
-  ## Parameters
-
-    * `client` - FlyAPI client
-    * `app_name` - The name of the app
-    * `machine_id` - The ID of the machine to cordon
-
-  ## Examples
-
-      iex> FlyAPI.cordon_machine(client, "my-app", "machine-id")
-      {:ok, %{status: 200}}
-  """
-  @spec cordon_machine(client(), app_name :: String.t(), machine_id :: String.t()) :: response()
-  def cordon_machine(client \\ @defaults, app_name, machine_id) do
-    request(client, :post, "/apps/#{app_name}/machines/#{machine_id}/cordon")
-  end
 
   @doc """
   List all events associated with a specific Machine.

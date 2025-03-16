@@ -1,4 +1,4 @@
-
+defmodule ScratchpadModule do
   #
   # Apps Resource
   #
@@ -911,3 +911,4 @@
   def request_oidc_token(client, params) do
     request(client, :post, "/tokens/oidc", body: params)
   end
+end

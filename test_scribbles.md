@@ -96,3 +96,11 @@ opts #=> [body: %{org_slug: "personal", app_name: "where-2"}]
 
 {:error, "403: unauthorized"}
 ```
+
+
+## Waiting for stopped state seems to need a version id, though the OpenAPI spec doesn't give one.
+
+```
+iex(22)> Clutterfly.Commands.nuke_one_machine("where", "d89133ef490d58")
+{:error, "400: instance_id required when waiting for stopped machine"}
+```

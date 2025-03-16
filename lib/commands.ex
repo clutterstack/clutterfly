@@ -12,30 +12,8 @@ defmodule Clutterfly.Commands do
   # So here is a place to build in things like waits or even deployment
   # Like flyctl commands but with personalised opinions
 
-  @doc """
-  List apps in personal org
-  """
-  def list_apps do
-    FlyMachines.app_list("personal")
-  end
+  @client FlyAPI.new(app_name: "where")
 
-  @doc """
-  List Machines in app
-  """
-  def list_machines(app) do
-    FlyMachines.machine_list(app)
-  end
-
-  @doc """
-  Run a new Machine
-  """
-  def create_machine(appname, body) do
-    case validate_and_run(:machine_create, [appname], body) do
-      {:ok, %{:status => _status, :body => body}} -> validate_body(body, FlySchemas.Machine)
-      {:error, %{:status => status, :body => %{"error" => errmsg}}} -> {:error, "#{status}: #{errmsg}"}
-      {:ok, _somethingelse} -> {:error, "Unexpected response from FlyMachines function"}
-    end
-  end
 
   @doc """
   Change the Machine's config (causes a restart)
@@ -49,12 +27,17 @@ defmodule Clutterfly.Commands do
   @doc """
   Update a volume
   """
-  def update_volume(appname, volume_id, body), do: validate_and_run(:volume_update, [appname, volume_id], body)
+  def update_volume(appname, volume_id, body) do
+    validate_and_run(:volume_update, [appname, volume_id], body)
+  end
+
 
   @doc """
   Try running with a preset config:
   """
-    def run_preset_machine(appname \\ "where", image \\ "registry.fly.io/where:debian-nano") do
+  def run_preset_machine(image \\ "registry.fly.io/where:debian-nano") do
+    client = @client
+    with {:ok, app_name} <- get_appname(client) do
       mach_params = %{
         config: %{
           image: image,
@@ -66,32 +49,83 @@ defmodule Clutterfly.Commands do
           }
         }
       }
-      create_machine(appname, mach_params)
+      FlyAPI.create_machine(client, app_name, mach_params)
     end
+  end
 
-    @doc """
-    Run with a minimal preset config
-
-    Return when it's "started"
-    """
-    def run_min_config(appname \\ "where", image \\ "registry.fly.io/where:debian-nano") do
+  @doc """
+  Run a new Machine with a minimal preset config
+  """
+  def run_min_config(image \\ "registry.fly.io/where:debian-nano") do
+    client = @client
+    with {:ok, app_name} <- get_appname(client) do
       mach_params = %{
         config: %{
           image: image
         }
       }
-      create_machine(appname, mach_params)
+      with {:ok, %{status: 200, body: %{"id" => mach_id}}}
+       <- FlyAPI.create_machine(client, app_name, mach_params)
+        do
+          Logger.info("Created Machine #{mach_id}")
+
+        end
+
+    end
+  end
+
+  @doc """
+  Force-destroy all Machines in the app.
+
+  Options (all the opts from the list_machines endpoint, except
+  `summary`, which is `true`):
+
+  * `include_deleted` - Include deleted machines
+  * `region` - Filter by region
+  * `state` - Comma separated list of states to filter (created, started, stopped, suspended)
+
+  """
+  def nuke_all_machines(appname, opts \\ []) do
+    client = FlyAPI.new()
+    options = opts ++ [summary: true]
+    # get Machines in app
+    with {:ok, %Req.Response{} = response} <- FlyAPI.list_machines(client, appname, options)
+      do
+        # Every object in the response body is a Machine summary.
+        response.body
+        |> Enum.map(fn machine -> nuke_one_machine(appname, machine["id"], machine["instance_id"]) end)
+      end
     end
 
-    # @doc """
-    # Force-destroy all Machines in the app
-    # """
-    # def force_destroy_machines(appname) do
-    #   # get Machines in app
+  @doc """
+  Stop and destroy one Machine.  Needs the instance_id in order to wait for it to be stopped.
+  """
+  def nuke_one_machine(appname, mach_id, instance_id) do
+    client = @client
+    with {:ok, _} <- FlyAPI.cordon_machine(client, appname, mach_id),
+    {:ok, %Req.Response{status: 200}} <- FlyAPI.stop_machine(client, appname, mach_id) do
+      case FlyAPI.wait_for_machine(client, appname, mach_id, instance_id: instance_id, state: "stopped") do
+        {:ok, %{status: 200, body: %{"ok" => true}}} ->
+          Logger.info("Machine #{mach_id} is stopped")
+          case FlyAPI.destroy_machine(client, appname, mach_id) do
+            {:ok, %{status: 200, body: %{"ok" => true}}} ->
+              Logger.info("Machine #{mach_id} is destroyed")
+              {:ok, %{status: 200, machine_id: mach_id}}
+          end
+        {:error, %{status: 404}} ->
+          Logger.info("Machine #{mach_id} not found; ")
+        response ->
+          Logger.info("Response from wait request: #{inspect response}")
+          response
+      end
+    end
+  end
+  {:error, %{message: "not_found: machine not found", status: 404}}
 
-    #   #
-    # end
-
-    # FlyMachines.machine_wait(appname, "machine-id", params: [state: "stopped"])
+  #Get the app name from the client struct. Errors if there isn't one.
+  defp get_appname(client) do
+    client.app_name && {:ok, client.app_name} ||
+    {:error, "Client struct doesn't provide an app name. Use Clutterfly.FlyAPI.new() to set one, or use a version of your command that accepts app_name as a parameter."}
+  end
 
 end
