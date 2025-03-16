@@ -1,10 +1,10 @@
-# Clutterfly
+# Clutterfly (WIP)
 
 Incomplete client for the Fly Machines API. **Use this project at your own risk!** It may be unreliable and you can use it to spin up resources that cost money on a cloud. 
 
-Makes API calls using dependency https://github.com/ckreiling/fly_machines (which uses `req`)
+Makes some API calls using dependency https://github.com/ckreiling/fly_machines (which uses `req`). Makes others using the internal FlyAPI module, which started out as a conversation with Claude 3.7 Sonnet. (https://www.clutterstack.com/posts/2025-03-12-claude-scarily-good-faking-deterministic-output)
 
-Validates request bodies against the Machines API OpenAPI spec using Ecto schemas in `lib/fly_schemas`. These were generated using https://github.com/clutterstack/openapi-json-to-ecto (which is half baked, so the validations are probably pretty janky).
+Validates, uh, _some_ request bodies against the Machines API OpenAPI spec using Ecto schemas in `lib/fly_schemas`. These were generated using https://github.com/clutterstack/openapi-json-to-ecto (which is half baked, so the validations are probably pretty janky).
 
 ## Usage
 
@@ -39,10 +39,9 @@ Who knows if half these schemas are nonsense?
 ## Todo: update schemas
 Decide how: is it more work or less reliable to regenerate them by improving and rerunning `openapi-json-to-ecto` vs. diffing `spec.json`
 
-## Todo: Retries and Req options
-[FlyMachines accepts Req options as an arg, and Req handles retries](https://github.com/ckreiling/fly_machines?tab=readme-ov-file#request-retries)
+## Retries and Req options
 
-Replaced FlyMachines with an internal FlyAPI module. 
+Replaced FlyMachines with an internal FlyAPI module for most things; pass Req options in the `client` struct.
 
 ## Todo: check if FlyAPI docs have all the parameters right
 Claude generated docs for the API functions. Actually, this is structured data so should use a  program to get the docs -- or to generate the API functions for this module with specs and stuff.
@@ -53,10 +52,4 @@ Follow all the embeds in a schema and display the structure.
 ## Dev scribbles
 
 ### Todo?
-* Commands specifically for running from IEx (With wrapped errors and confirmation, pretty output)
 * Validate path and query parameters. FlyMachines handles this OK(`wait` and `apps_list` both have query parameters) (Nimble Options?)
-
-
-### Snippets
-For parsing the response somewhere else
-`{:error, %{:status => status, :body => %{"error" => errmsg}}} -> {:error, status}`
