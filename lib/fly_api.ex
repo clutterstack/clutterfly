@@ -61,7 +61,7 @@ defmodule Clutterfly.FlyAPI do
   def new(opts \\ []) do
     %{
       base_url: Keyword.get(opts, :base_url, @base_url),
-      api_token: Keyword.get(opts, :api_token, System.fetch_env!("FLY_API_TOKEN")),
+      api_token: Keyword.get(opts, :api_token, System.get_env("FLY_API_TOKEN")),
       app_name: Keyword.get(opts, :app_name, nil),
       req_opts: Keyword.drop(opts, [:base_url, :api_token, :app_name])
     }
