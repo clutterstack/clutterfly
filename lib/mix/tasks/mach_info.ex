@@ -13,8 +13,8 @@ defmodule Mix.Tasks.MachInfo do
   Usage:
   mix count "my_app" --include-deleted
   """
-
   @spacing 4
+
   @args_types strict: [
     include_deleted: :boolean,
     image: :boolean,
@@ -24,7 +24,8 @@ defmodule Mix.Tasks.MachInfo do
     ]
 
   def run([app_name | opts]) when is_binary(app_name) do
-
+    # Just because of previous log-level shenanigans
+    Logger.configure(level: :info)
     Application.ensure_all_started(:telemetry)
     Application.ensure_all_started(:req)
 
