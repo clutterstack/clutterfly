@@ -14,6 +14,7 @@ defmodule Mix.Tasks.MachInfo do
   mix count "my_app" --include-deleted
   """
 
+  @spacing 4
   @args_types strict: [
     include_deleted: :boolean,
     image: :boolean,
