@@ -14,9 +14,8 @@ defmodule Mix.Tasks.MachInfo do
   mix count "my_app" --include-deleted
   """
 
-  @spacing 4
-
-  @args_types strict: [include_deleted: :boolean,
+  @args_types strict: [
+    include_deleted: :boolean,
     image: :boolean,
     region: :string,
     state: :string,
@@ -24,13 +23,7 @@ defmodule Mix.Tasks.MachInfo do
     ]
 
   def run([app_name | opts]) when is_binary(app_name) do
-    # Just because of previous log-level shenanigans
-    Logger.configure(level: :info)
-    :logger.add_handler_filter(:default, :track_changes, {
-      fn _log, level, _meta ->
-        IO.puts "Logger level changed to: #{level}"
-        :ignore
-      end, nil})
+
     Application.ensure_all_started(:telemetry)
     Application.ensure_all_started(:req)
 
@@ -85,7 +78,7 @@ defmodule Mix.Tasks.MachInfo do
   end
 
   defp compile_info(machines, display_opts) do
-    # IO.puts("in compile_info, display_opts is #{inspect display_opts}")
+    # Logger.debug("in compile_info, display_opts is #{inspect display_opts}")
     case display_opts[:mode] do
       "scale" -> machines
                 |> Enum.map(fn m -> [id: m["id"], cpu_kind: get_cpu_kind(m), cpus: get_cpus(m), memory_mb: get_ram(m)] end)
@@ -128,21 +121,7 @@ defmodule Mix.Tasks.MachInfo do
             Enum.map(Enum.drop(machine, 1), fn {key, val} -> IO.puts("  #{key}: #{val}") end)
             IO.puts ""
           end)
-
     end
-
-
-    # if cols_after > 0 do
-    # IO.puts ""
-    # IO.puts IO.iodata_to_binary([Enum.at(padded_headers, 0), Enum.drop(padded_headers, cols_before)])
-    # summary = List.first(machine_summaries) # would still need to adapt this to do more Machines than the first
-    # second_batch_values = Enum.take(summary, 1) ++ Enum.drop(summary, cols_before)
-    # second_batch_values
-    #   |> Enum.reduce("", fn {_key, val}, acc -> IO.iodata_to_binary([acc, val, String.duplicate(" ", @spacing)]) end)
-    #   |> IO.puts
-
-    # end
-
   end
 
   defp process_display_opts(parsed) do
@@ -189,16 +168,8 @@ defmodule Mix.Tasks.MachInfo do
     stuff = mach_info
     |> Enum.map(fn {key, val} -> {Atom.to_string(key) |> String.upcase, val} end)
 
-    # widths = stuff
-    # |> Enum.map(fn {key, val} ->
-    #     {String.length(key), String.length(val)}
-    #   end)
-    # |> dbg
-
     col_widths = stuff
     |> Enum.map(fn {key, val} -> max(String.length(key) + 1, String.length(val) + @spacing) end)
-
-    # col_widths = Enum.map(widths, fn {x, y} -> max(x + @spacing, y + 1) end)
 
     # Add spaces to column headers to they'll line up with the col values
     padded_headers =  Enum.zip_with(stuff, col_widths, fn {key, _val}, y ->
@@ -207,24 +178,6 @@ defmodule Mix.Tasks.MachInfo do
         end)
 
     {col_widths, padded_headers}
-
-    # The following was for breaking the output into separate rows, but on a narrow
-    # terminal it didn't look great so blah
-    # Get the current width of the terminal
-    # {:ok, term_width} = :io.columns
-
-    # # Get the terminal column where each display column ends
-    # stops = val_widths |> Enum.scan(&(&1 + &2))
-
-    # # Split when the next column wouldn't fit in the terminal
-    # # Outputs a tuple
-    # {stops_first, stops_last} = stops
-    #     |> Enum.split_while(fn x -> x < term_width end) # e.g. {[14, 22], [89]}}
-    # cols_before = length(stops_first)
-    # cols_after = length(stops_last)
-
-    # # Return stuff
-    # {padded_headers, cols_before, cols_after}
   end
 
 end
