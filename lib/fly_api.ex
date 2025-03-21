@@ -32,7 +32,7 @@ defmodule Clutterfly.FlyAPI do
 
   @base_url "https://api.machines.dev/v1"
 
-  # Settings not specific to the request
+  # The client struct holds settings not specific to the request
   @type client :: %{
     base_url: String.t(),
     api_token: String.t(),
@@ -88,9 +88,14 @@ defmodule Clutterfly.FlyAPI do
     # Add any Req options specified in the client struct
     req_opts = Keyword.merge(req_opts, client.req_opts)
 
-    Req.request(req_opts)
-    # |> IO.inspect(label: "Req.request returned this")
-    |> handle_response()
+    case validate_client(client) do
+      {:ok, _client} ->
+        Req.request(req_opts)
+        |> handle_response()
+      {:error, reason} ->
+        {:error, reason}
+    end
+
   end
 
   # Making these public so jello can compile
@@ -106,11 +111,28 @@ defmodule Clutterfly.FlyAPI do
   end
 
   def handle_response({:ok, %Req.Response{status: status, body: %{"error" => message}}}) do
+    Logger.info("Got a %Req.Response{} with body %{\"error\" => message}")
     {:error, %{status: status, message: message}}
   end
 
   def handle_response({:error, _} = error) do
     error
+  end
+
+  def validate_client(client) do
+    base_url = client.base_url || nil
+    api_token = client.api_token || nil
+    case client do
+      %{base_url: base_url, api_token: api_token} when is_binary(base_url) and is_binary(api_token) ->
+        Logger.debug("client has base_url and api_token strings")
+        {:ok, client}
+      %{base_url: _base_url, api_token: api_token} when is_binary(base_url) and is_binary(api_token) == false ->
+        {:error, "api_token must be a string; got #{api_token}"}
+      %{base_url: _base_url, api_token: _token} when is_binary(base_url) == false and is_binary(api_token) ->
+        {:error, "base_url must be a string"}
+      _invalid ->
+        {:error, "Invalid client structure"}
+      end
   end
 
   #

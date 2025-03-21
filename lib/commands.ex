@@ -1,6 +1,5 @@
 defmodule Clutterfly.Commands do
   import Clutterfly.Validate
-  alias Clutterfly.FlySchemas
   alias Clutterfly.FlyAPI
 
   require Logger
@@ -13,6 +12,92 @@ defmodule Clutterfly.Commands do
   # Like flyctl commands but with personalised opinions
 
   @client FlyAPI.new(app_name: "where")
+
+
+  @doc """
+  Count Machines in the app
+
+  ## Options
+  * region
+  * state
+  * include_deleted
+  * TODO?: filter by metadata etc
+
+  Clutterfly.FlyAPI.list_machines(client, "my-app", region: "yyz", state: "stopped", summary: true, include_deleted: true)
+  """
+  def count_machines(app_name, opts \\ []) do
+    # It's a read-only command so use whatever token is in $FLY_API_TOKEN
+    client = case opts[:client] do
+      %client{} ->
+        Logger.debug("Got a client from opts")
+        Keyword.get(opts, client)
+      nil ->
+        Logger.debug("No client specified; setting one.")
+        FlyAPI.new()
+    end
+    # Options
+    options = [
+    region: Keyword.get(opts, :region),
+    state: Keyword.get(opts, :state),
+    include_deleted: Keyword.get(opts, :include_deleted)
+    ]
+    # Get the Machines (summary mode)
+    # Count the Machines
+    case Clutterfly.FlyAPI.list_machines(client, app_name, options ++ [summary: true])
+    do
+      {:ok, %{status: 200, body: machines}} ->
+          num = machines |> Enum.count()
+          {:ok, num}
+      {:ok, response } -> {:ok, response}
+      {_, response} -> {:error, response}
+    end
+  end
+
+
+  @doc """
+  Get info about Machines in the app
+
+  ## Options
+  * region
+  * state
+  * include_deleted
+  * TODO?: filter by metadata etc
+
+  Clutterfly.FlyAPI.list_machines(client, "my-app", region: "yyz", state: "stopped", summary: true, include_deleted: true)
+  """
+  def see_machines(app_name, opts \\ []) do
+    # It's a read-only command so use whatever token is in $FLY_API_TOKEN
+    client = case opts[:client] do
+      %client{} ->
+        Logger.debug("Got a client from opts")
+        Keyword.get(opts, client)
+      nil ->
+        Logger.debug("No client specified; setting one.")
+        FlyAPI.new()
+    end
+    # Options
+    options = [
+    region: Keyword.get(opts, :region),
+    state: Keyword.get(opts, :state),
+    include_deleted: Keyword.get(opts, :include_deleted)
+    ]
+    # Get the Machines (summary mode)
+    case Clutterfly.FlyAPI.list_machines(client, app_name, options ++ [summary: true])
+    do
+      {:ok, %{status: 200, body: machines}} ->
+          # Count the Machines
+          num_machines = machines |> Enum.count()
+          if num_machines > 0 do
+            # Get some tidbits about each Machine
+            raw_infos = Enum.map(machines, fn machine -> %{id: machine["id"], state: machine["state"], image: machine["incomplete_config"] && machine["incomplete_config"]["image"] || nil} end)
+            # infos = Enum.map(machines, fn machine -> )
+            {:ok, %{num_machines: num_machines, info: raw_infos}}
+          end
+      {:ok, response } -> {:ok, response}
+      {_, response} -> {:error, response}
+    end
+  end
+
 
 
   @doc """
