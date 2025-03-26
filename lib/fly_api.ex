@@ -76,20 +76,20 @@ defmodule Clutterfly.FlyAPI do
   """
   @spec request(client(), method :: atom(), path :: String.t(), opts :: keyword()) :: response()
   def request(client, method, path, opts \\ []) do
-    req_opts = [
-      method: method,
-      url: "#{client.base_url}#{path}",
-      auth: {:bearer, client.api_token},
-      # receive_timeout: Keyword.get(opts, :timeout, 30_000),
-      json: Keyword.get(opts, :body),
-      params: Keyword.get(opts, :params, [])
-    ]
-
-    # Add any Req options specified in the client struct
-    req_opts = Keyword.merge(req_opts, client.req_opts)
-
     case validate_client(client) do
       {:ok, _client} ->
+        req_opts = [
+          method: method,
+          url: "#{client.base_url}#{path}",
+          auth: {:bearer, client.api_token},
+          # receive_timeout: Keyword.get(opts, :timeout, 30_000),
+          json: Keyword.get(opts, :body),
+          params: Keyword.get(opts, :params, [])
+        ]
+
+        # Add any Req options specified in the client struct
+        req_opts = Keyword.merge(req_opts, client.req_opts)
+
         Req.request(req_opts)
         |> handle_response()
       {:error, reason} ->
@@ -124,7 +124,7 @@ defmodule Clutterfly.FlyAPI do
     api_token = client.api_token || nil
     case client do
       %{base_url: base_url, api_token: api_token} when is_binary(base_url) and is_binary(api_token) ->
-        Logger.debug("client has base_url and api_token strings")
+        # Logger.debug("client has base_url and api_token strings")
         {:ok, client}
       %{base_url: _base_url, api_token: api_token} when is_binary(base_url) and is_binary(api_token) == false ->
         {:error, "api_token must be a string; got #{api_token}"}

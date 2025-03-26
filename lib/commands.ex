@@ -27,14 +27,16 @@ defmodule Clutterfly.Commands do
   """
   def count_machines(app_name, opts \\ []) do
     # It's a read-only command so use whatever token is in $FLY_API_TOKEN
-    client = case opts[:client] do
-      %client{} ->
-        Logger.debug("Got a client from opts")
-        Keyword.get(opts, client)
-      nil ->
-        Logger.debug("No client specified; setting one.")
-        FlyAPI.new()
-    end
+    Logger.info("opts: #{inspect opts}")
+    client =
+      case opts[:client] do
+        client when is_map(client) ->
+          Logger.debug("count_machines got a client map from opts")
+          client
+        nil ->
+          Logger.debug("No client specified; setting one.")
+          FlyAPI.new()
+      end
     # Options
     options = [
     region: Keyword.get(opts, :region),
@@ -52,6 +54,9 @@ defmodule Clutterfly.Commands do
       {_, response} -> {:error, response}
     end
   end
+
+
+
 
 
   @doc """
@@ -98,6 +103,60 @@ defmodule Clutterfly.Commands do
     end
   end
 
+  @doc """
+  Makes a list_machines request and returns the list of Machines summaries
+  """
+  def get_mach_summaries(app_name, opts \\ []) do
+    # It's a read-only command so use whatever token is in $FLY_API_TOKEN
+    client = case opts[:client] do
+      %client{} ->
+        Logger.debug("Got a client from opts")
+        Keyword.get(opts, client)
+      nil ->
+        Logger.debug("No client specified; setting one.")
+        FlyAPI.new()
+    end
+
+    options = Keyword.drop(opts, client)
+    # Get the Machines (summary mode)
+    case Clutterfly.FlyAPI.list_machines(client, app_name, options ++ [summary: true])
+    do
+      {:ok, %{status: 200, body: machines}} -> {:ok, machines}
+      {:ok, response } -> {:ok, response}
+      {_, response} -> {:error, response}
+    end
+  end
+
+
+
+  @doc """
+  Count Machines and see regions with Machines, optionally by region
+
+  # Get count and unique regions
+  region_stats(maps)  # Returns {count, unique_regions}
+
+  # Get count, unique regions, and frequencies
+  region_stats(maps, with_frequencies: true)  # Returns {count, unique_regions, frequencies_map}
+
+  # Get count for a specific region
+  region_stats(maps, region: "yyz")  # Returns count for that region (integer)
+  """
+  def region_stats(machines, options \\ []) do
+    specific_region = Keyword.get(options, :region)
+    regions = machines |> Enum.map(& &1["region"]) |> Enum.uniq()
+    frequencies = machines |> Enum.map(& &1["region"]) |> Enum.frequencies()
+
+    cond do
+      specific_region != nil ->
+        Map.get(frequencies, specific_region, 0)
+
+      Keyword.get(options, :with_frequencies, false) ->
+        {length(machines), regions, frequencies}
+
+      true ->
+        {length(machines), regions}
+    end
+  end
 
 
   @doc """
