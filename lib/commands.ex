@@ -97,10 +97,10 @@ defmodule Clutterfly.Commands do
   def get_mach_summaries(app_name, opts \\ []) do
     # It's a read-only command so use whatever token is in $FLY_API_TOKEN
     client = case opts[:client] do
-      %client{} ->
+      %{} ->
         Logger.debug("Got a client from opts")
-        Keyword.get(opts, client)
-      nil ->
+        Keyword.get(opts, :client)
+      _ ->
         Logger.debug("No client specified; setting one.")
         FlyAPI.new()
     end
@@ -130,13 +130,13 @@ defmodule Clutterfly.Commands do
   region_stats(maps, region: "yyz")  # Returns count for that region (integer)
   """
   def region_stats(machines, options \\ []) do
-    specific_region = Keyword.get(options, :region)
+    region = Keyword.get(options, :region)
     regions = machines |> Enum.map(& &1["region"]) |> Enum.uniq()
     frequencies = machines |> Enum.map(& &1["region"]) |> Enum.frequencies()
 
     cond do
-      specific_region != nil ->
-        Map.get(frequencies, specific_region, 0)
+      region != nil ->
+        Map.get(frequencies, region, 0)
 
       Keyword.get(options, :with_frequencies, false) ->
         {length(machines), regions, frequencies}
